@@ -1,5 +1,35 @@
+import { ITEMS_PER_PAGE } from "../utils/constants";
 import { getToday } from "../utils/helpers";
 import supabase from "./supabase";
+
+export async function getBookings({ filter, sortBy, page }) {
+  let query = supabase
+    .from("bookings")
+    .select("*, cabins(*), guests(*)", { count: "exact" });
+
+  if (filter?.field && filter?.filterValue)
+    query = query.eq(filter.field, filter.filterValue);
+
+  if (sortBy?.field && sortBy?.direction)
+    query = query.order(sortBy.field, {
+      ascending: sortBy.direction === "asc",
+    });
+
+  if (page) {
+    const from = (page - 1) * ITEMS_PER_PAGE;
+    const to = page + (ITEMS_PER_PAGE - 1);
+    query = query.range(from, to);
+  }
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    console.error(error);
+    throw new Error("Bookings could not be loaded");
+  }
+
+  return { data, count };
+}
 
 export async function getBooking(id) {
   const { data, error } = await supabase
@@ -20,7 +50,7 @@ export async function getBooking(id) {
 export async function getBookingsAfterDate(date) {
   const { data, error } = await supabase
     .from("bookings")
-    .select("created_at, totalPrice, extrasPrice")
+    .select("created_at, totalPrice, extraPrice")
     .gte("created_at", date)
     .lte("created_at", getToday({ end: true }));
 
@@ -36,8 +66,8 @@ export async function getBookingsAfterDate(date) {
 export async function getStaysAfterDate(date) {
   const { data, error } = await supabase
     .from("bookings")
-    // .select('*')
-    .select("*, guests(fullName)")
+    .select("*")
+    // .select("*, guests(fullName)")
     .gte("startDate", date)
     .lte("startDate", getToday());
 

@@ -9,6 +9,11 @@ import Button from "../../ui/Button";
 import ButtonText from "../../ui/ButtonText";
 
 import { useMoveBack } from "../../hooks/useMoveBack";
+import { useBooking } from "./useBooking";
+import { useCheckout } from "../check-in-out/useCheckout";
+import Spinner from "../../ui/Spinner";
+import { useNavigate } from "react-router-dom";
+import { useDeleteBooking } from "../check-in-out/useDeleteBooking";
 
 const HeadingGroup = styled.div`
   display: flex;
@@ -17,8 +22,12 @@ const HeadingGroup = styled.div`
 `;
 
 function BookingDetail() {
-  const booking = {};
-  const status = "checked-in";
+  const { booking, isLoading } = useBooking();
+  const { checkout, isCheckingout } = useCheckout();
+  const { deleteBooking } = useDeleteBooking();
+  const navigate = useNavigate();
+
+  const { id: bookingId, status } = booking || {};
 
   const moveBack = useMoveBack();
 
@@ -28,11 +37,13 @@ function BookingDetail() {
     "checked-out": "silver",
   };
 
+  if (isLoading) return <Spinner />;
+
   return (
     <>
-      <Row type="horizontal">
+      <Row type="horisontal">
         <HeadingGroup>
-          <Heading as="h1">Booking #X</Heading>
+          <Heading as="h1">Booking #{bookingId}</Heading>
           <Tag type={statusToTagName[status]}>{status.replace("-", " ")}</Tag>
         </HeadingGroup>
         <ButtonText onClick={moveBack}>&larr; Back</ButtonText>
@@ -41,6 +52,28 @@ function BookingDetail() {
       <BookingDataBox booking={booking} />
 
       <ButtonGroup>
+        {status === "checked-in" && (
+          <Button
+            variation="primary"
+            onClick={() => {
+              checkout(bookingId);
+              navigate(-1);
+            }}
+          >
+            Check out
+          </Button>
+        )}
+        {status === "checked-out" && (
+          <Button
+            variation="danger"
+            onClick={() => {
+              deleteBooking(bookingId);
+              navigate(-1);
+            }}
+          >
+            Check out
+          </Button>
+        )}
         <Button variation="secondary" onClick={moveBack}>
           Back
         </Button>
